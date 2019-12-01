@@ -10,11 +10,11 @@ module MIPS_Testbench ();
  wire[31:0] Mem_Bus_Wire, REG_1;
  reg[6:0] AddressTB;
  wire WE_Mux, CS_Mux;
- reg init, RST, WE_TB, CS_TB;
+ reg init, RST, WE_TB, CS_TB, HALT;
 
  integer i;
 
- MIPS CPU(CLK, RST, CS, WE, Address, Mem_Bus_Wire, REG_1);
+ MIPS CPU(CLK, RST, HALT, CS, WE, Address, Mem_Bus_Wire, REG_1);
  Memory MEM(CS_Mux, WE_Mux, CLK, Address_Mux, Mem_Bus_Wire);
 
  assign Address_Mux = (init)? AddressTB : Address;
@@ -72,10 +72,10 @@ endmodule
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-module Complete_MIPS(CLK, RST, A_Out, D_Out, REG_1);
+module Complete_MIPS(CLK, RST, HALT, A_Out, D_Out, REG_1);
   // Will need to be modified to add functionality
   input CLK;
-  input RST;
+  input RST, HALT;
   output[6:0] A_Out;
   output[31:0] D_Out, REG_1;
 
@@ -86,7 +86,7 @@ module Complete_MIPS(CLK, RST, A_Out, D_Out, REG_1);
   assign A_Out = ADDR;
   assign D_Out = Mem_Bus;
 
-  MIPS CPU(CLK, RST, CS, WE, ADDR, Mem_Bus, REG_1);
+  MIPS CPU(CLK, RST, HALT, CS, WE, ADDR, Mem_Bus, REG_1);
   Memory MEM(CS, WE, CLK, ADDR, Mem_Bus);
 
 endmodule
@@ -183,8 +183,8 @@ endmodule
 `define f_code instr[5:0]
 `define numshift instr[10:6]
 
-module MIPS (CLK, RST, CS, WE, ADDR, Mem_Bus, REG_1);
-  input CLK, RST;
+module MIPS (CLK, RST, HALT, CS, WE, ADDR, Mem_Bus, REG_1);
+  input CLK, RST, HALT;
   output reg CS, WE;
   output [6:0] ADDR;
   output[31:0] REG_1;
@@ -331,19 +331,22 @@ module MIPS (CLK, RST, CS, WE, ADDR, Mem_Bus, REG_1);
       state <= 3'd0;
       pc <= 7'd0;
     end
-    else begin
+    else if (~HALT || state != 0) begin
       state <= nstate;
       pc <= npc;
     end
+    else begin end
 
-    if (state == 3'd0) instr <= Mem_Bus;
-    else if (state == 3'd1) begin
-      opsave <= op;
-      reg_or_imm_save <= reg_or_imm;
-      alu_or_mem_save <= alu_or_mem;
-    end
-    else if (state == 3'd2) alu_result_save <= alu_result;
-
+    if (~HALT || state != 0) begin
+        if (state == 3'd0) instr <= Mem_Bus;
+        else if (state == 3'd1) begin
+          opsave <= op;
+          reg_or_imm_save <= reg_or_imm;
+          alu_or_mem_save <= alu_or_mem;
+        end
+        else if (state == 3'd2) alu_result_save <= alu_result;
+        end
+    else begin end
   end //always
 
 endmodule

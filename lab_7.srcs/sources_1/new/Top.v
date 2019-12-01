@@ -7,16 +7,16 @@ module Top(CLK, RST, HALT, REG_LED);
   wire[31:0] REG_1;
   wire slowCLK;
 
-  slowCLK slow(CLK, HALT, slowCLK);
-  Complete_MIPS mips(slowCLK, RST, A_Out, D_Out, REG_1);
+  slowCLK slow(CLK, slowCLK);
+  Complete_MIPS mips(slowCLK, RST, HALT, A_Out, D_Out, REG_1);
   
   assign REG_LED = REG_1[7:0];
 
 endmodule
 
 
-module slowCLK(CLK, HALT, slowCLK);
-    input CLK, HALT;
+module slowCLK(CLK, slowCLK);
+    input CLK;
     output slowCLK;
     reg slowCLK;
     integer cnt;
@@ -27,11 +27,10 @@ module slowCLK(CLK, HALT, slowCLK);
     end
     
     always @(posedge CLK) begin
-        if(~HALT) begin
             cnt = cnt + 1;
-            if(cnt == 50000000) begin
+            if(cnt == 8000000) begin
                 slowCLK = ~slowCLK;
+                cnt = 0;
             end else begin end
-        end else begin end
     end
 endmodule
